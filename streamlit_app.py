@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 
-st.set_page_config(page_title="Readiness Predictor (Ranked Sliders)", layout="wide")
+st.set_page_config(page_title="Readiness Predictor (Ranked Sliders Fixed)", layout="wide")
 
 @st.cache_data
 def load_data():
@@ -22,28 +22,32 @@ def load_data():
 
 df, features = load_data()
 
-# Train Random Forest model inline
+# Train Random Forest
 X = df[features]
 y = np.random.normal(75, 10, len(X))
 model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X, y)
 
-# Get feature importance order
+# Feature importance and slider order
 importances = model.feature_importances_
 importance_df = pd.DataFrame({"Feature": features, "Importance": importances}).sort_values(by="Importance", ascending=False)
 sorted_features = importance_df["Feature"].tolist()
 
-# Interface
+# Input sliders (ordered by importance)
 st.title("🔧 Interactive Readiness Predictor + Ranked Sliders (Artificial data)")
-st.markdown("Sliders below are ordered by importance in the model.")
+st.markdown("Sliders below are ordered by feature importance in the model.")
 
 input_values = {}
 for feature in sorted_features:
     input_values[feature] = st.slider(feature, 0, 100, 50)
-input_df = pd.DataFrame([input_values])
-pred = model.predict(input_df)[0]
 
-# Readiness score
+input_df = pd.DataFrame([input_values])
+
+# Reorder columns to match training feature order for model prediction
+input_df = input_df[features]
+
+# Prediction
+pred = model.predict(input_df)[0]
 st.subheader("📈 Predicted Readiness Score")
 st.metric(label="Predicted Readiness", value=f"{pred:.1f}")
 
