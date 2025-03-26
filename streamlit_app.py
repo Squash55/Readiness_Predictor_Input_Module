@@ -2,9 +2,10 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 
-st.set_page_config(page_title="Readiness Predictor (Inline Model)", layout="wide")
+st.set_page_config(page_title="Interactive Readiness Predictor (with Live Pareto)", layout="wide")
 
 @st.cache_data
 def load_data():
@@ -21,21 +22,19 @@ def load_data():
 
 df, features = load_data()
 
-# Simulate target and train model inline
+# Train Random Forest inline
 X = df[features]
 y = np.random.normal(75, 10, len(X))
-
 model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X, y)
 
-# User input interface
-st.title("🔧 Interactive Readiness Predictor (Artificial data)")
-st.markdown("Adjust the sliders below to simulate different readiness driver profiles.")
+# UI for inputs
+st.title("🔧 Interactive Readiness Predictor + Live Pareto (Artificial data)")
+st.markdown("Adjust the sliders to simulate base performance and view real-time predictions.")
 
 input_values = {}
 for feature in features:
     input_values[feature] = st.slider(feature, 0, 100, 50)
-
 input_df = pd.DataFrame([input_values])
 pred = model.predict(input_df)[0]
 
@@ -53,5 +52,18 @@ elif pred > 60:
     st.warning("Low readiness. Focus on Equipment and Personnel Gaps.")
 else:
     st.error("Critical readiness concern. Immediate intervention needed.")
+
+# Live Pareto Chart
+st.subheader("📊 Feature Importance (Live from Model)")
+
+importances = model.feature_importances_
+importance_df = pd.DataFrame({"Feature": features, "Importance": importances}).sort_values(by="Importance", ascending=False)
+
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.barh(importance_df["Feature"], importance_df["Importance"], color="skyblue")
+ax.invert_yaxis()
+ax.set_title("Top Factors Affecting Readiness")
+ax.set_xlabel("Relative Importance")
+st.pyplot(fig)
 
 st.markdown("---")
