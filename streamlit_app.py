@@ -2,36 +2,48 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
+from sklearn.ensemble import RandomForestRegressor
 
-st.set_page_config(page_title="Readiness Predictor (Interactive)", layout="wide")
+st.set_page_config(page_title="Readiness Predictor (Inline Model)", layout="wide")
 
-# Load model
-model = joblib.load("optimized_rf_model.joblib")
+@st.cache_data
+def load_data():
+    df = pd.read_csv("Expanded_Readiness_Spreadsheet.csv")
+    features = [
+        "Mission Complexity", "Maintenance Burden", "Personnel Gaps", "Logistics Readiness",
+        "Equipment Availability", "Cyber Resilience", "Fuel Supply Score", "Flight Ops Readiness",
+        "Medical Support Score", "Training Level"
+    ]
+    for col in features:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df.dropna(subset=features)
+    return df, features
 
-# Feature input interface
+df, features = load_data()
+
+# Simulate target and train model inline
+X = df[features]
+y = np.random.normal(75, 10, len(X))
+
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+model.fit(X, y)
+
+# User input interface
 st.title("🔧 Interactive Readiness Predictor (Artificial data)")
 st.markdown("Adjust the sliders below to simulate different readiness driver profiles.")
 
-inputs = {}
-inputs['Mission Complexity'] = st.slider("Mission Complexity", 0, 100, 50)
-inputs['Maintenance Burden'] = st.slider("Maintenance Burden", 0, 100, 50)
-inputs['Personnel Gaps'] = st.slider("Personnel Gaps", 0, 100, 50)
-inputs['Logistics Readiness'] = st.slider("Logistics Readiness", 0, 100, 50)
-inputs['Equipment Availability'] = st.slider("Equipment Availability", 0, 100, 50)
-inputs['Cyber Resilience'] = st.slider("Cyber Resilience", 0, 100, 50)
-inputs['Fuel Supply Score'] = st.slider("Fuel Supply Score", 0, 100, 50)
-inputs['Flight Ops Readiness'] = st.slider("Flight Ops Readiness", 0, 100, 50)
-inputs['Medical Support Score'] = st.slider("Medical Support Score", 0, 100, 50)
-inputs['Training Level'] = st.slider("Training Level", 0, 100, 50)
+input_values = {}
+for feature in features:
+    input_values[feature] = st.slider(feature, 0, 100, 50)
 
-input_df = pd.DataFrame([inputs])
+input_df = pd.DataFrame([input_values])
 pred = model.predict(input_df)[0]
 
+# Prediction Output
 st.subheader("📈 Predicted Readiness Score")
 st.metric(label="Predicted Readiness", value=f"{pred:.1f}")
 
-# Feedback
+# Smart Feedback
 st.subheader("🧠 Smart Feedback")
 if pred > 85:
     st.success("Excellent! This base shows high readiness potential.")
