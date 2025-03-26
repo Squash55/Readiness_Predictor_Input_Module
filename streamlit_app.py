@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 
-st.set_page_config(page_title="Interactive Readiness Predictor (with Live Pareto)", layout="wide")
+st.set_page_config(page_title="Readiness Predictor (Ranked Sliders)", layout="wide")
 
 @st.cache_data
 def load_data():
@@ -22,27 +22,32 @@ def load_data():
 
 df, features = load_data()
 
-# Train Random Forest inline
+# Train Random Forest model inline
 X = df[features]
 y = np.random.normal(75, 10, len(X))
 model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X, y)
 
-# UI for inputs
-st.title("🔧 Interactive Readiness Predictor + Live Pareto (Artificial data)")
-st.markdown("Adjust the sliders to simulate base performance and view real-time predictions.")
+# Get feature importance order
+importances = model.feature_importances_
+importance_df = pd.DataFrame({"Feature": features, "Importance": importances}).sort_values(by="Importance", ascending=False)
+sorted_features = importance_df["Feature"].tolist()
+
+# Interface
+st.title("🔧 Interactive Readiness Predictor + Ranked Sliders (Artificial data)")
+st.markdown("Sliders below are ordered by importance in the model.")
 
 input_values = {}
-for feature in features:
+for feature in sorted_features:
     input_values[feature] = st.slider(feature, 0, 100, 50)
 input_df = pd.DataFrame([input_values])
 pred = model.predict(input_df)[0]
 
-# Prediction Output
+# Readiness score
 st.subheader("📈 Predicted Readiness Score")
 st.metric(label="Predicted Readiness", value=f"{pred:.1f}")
 
-# Smart Feedback
+# Feedback
 st.subheader("🧠 Smart Feedback")
 if pred > 85:
     st.success("Excellent! This base shows high readiness potential.")
@@ -53,12 +58,8 @@ elif pred > 60:
 else:
     st.error("Critical readiness concern. Immediate intervention needed.")
 
-# Live Pareto Chart
+# Pareto chart
 st.subheader("📊 Feature Importance (Live from Model)")
-
-importances = model.feature_importances_
-importance_df = pd.DataFrame({"Feature": features, "Importance": importances}).sort_values(by="Importance", ascending=False)
-
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.barh(importance_df["Feature"], importance_df["Importance"], color="skyblue")
 ax.invert_yaxis()
